@@ -208,7 +208,7 @@ class ServidorTicTacToe:
                     print(f"Error al enviar actualización a cliente: {e}")
                     cliente.close()
                     self.clientes.remove(cliente)
-
+#
     def run(self):
         self.clientes = []
         thread_aceptar_conexiones = threading.Thread(target=self.aceptar_conexiones)
