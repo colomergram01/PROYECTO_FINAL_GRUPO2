@@ -57,45 +57,64 @@ class TicTacToeServer(QWidget):
     def handle_client(self, client_socket, player):
         while True:
             try:
-                # Recibir el movimiento del jugador
+                # Recibir los datos del cliente
                 data = client_socket.recv(1024)
                 if not data:
                     break
 
-                # Decodificar el movimiento recibido (Ejemplo: '1,2' para fila 1, columna 2)
-                row, column = map(int, data.decode().strip().split(','))
+                # Decodificar los datos recibidos
+                message = data.decode()
 
-                # Verificar si es el turno del jugador y el movimiento es válido
-                if player == self.current_turn and self.board[row][column] is None:
-                    self.board[row][column] = player
+                # Si el mensaje comienza con "/chat", es un mensaje de chat
+                if message.startswith("/chat"):
+                    # Obtener el contenido del mensaje de chat
+                    chat_message = message[6:]
 
-                    # Verificar si el jugador ha ganado
-                    if self.check_win(player):
-                        # Enviar mensaje de victoria al jugador
-                        message = "Victory,{}".format(player)
-                        client_socket.sendall(message.encode())
+                    # Enviar el mensaje de chat a todos los clientes
+                    for client in self.clients:
+                        if client != client_socket:
+                            client.sendall("{}".format(chat_message).encode())
 
-                    else:
-                        # Cambiar el turno al otro jugador
-                        self.current_turn = 'X' if self.current_turn == 'O' else 'O'
+                else:
+                    # Decodificar el movimiento recibido (Ejemplo: '1,2' para fila 1, columna 2)
+                    row, column = map(int, message.strip().split(','))
 
-                        # Verificar si el juego ha terminado en empate
-                        if all(all(cell is not None for cell in row) for row in self.board):
-                            # Enviar mensaje de empate a ambos jugadores
-                            message = "Draw"
-                            for client in self.clients:
-                                client.sendall(message.encode())
+                    # Verificar si es el turno del jugador y el movimiento es válido
+                    if player == self.current_turn and self.board[row][column] is None:
+                        self.board[row][column] = player
+
+                        # Verificar si el jugador ha ganado
+                        if self.check_win(player):
+                            # Enviar mensaje de victoria al jugador
+                            message = "Victory,{}".format(player)
+                            client_socket.sendall(message.encode())
 
                         else:
-                            # Enviar el nuevo estado del tablero a ambos jugadores
-                            for client in self.clients:
-                                client.sendall(self.board_to_bytes())
+                            # Cambiar el turno al otro jugador
+                            self.current_turn = 'X' if self.current_turn == 'O' else 'O'
+
+                            # Verificar si el juego ha terminado en empate
+                            if all(all(cell is not None for cell in row) for row in self.board):
+                                # Enviar mensaje de empate a ambos jugadores
+                                message = "Draw"
+                                for client in self.clients:
+                                    client.sendall(message.encode())
+
+                            else:
+                                # Enviar el nuevo estado del tablero a ambos jugadores
+                                for client in self.clients:
+                                    client.sendall(self.board_to_bytes())
 
             except Exception as e:
                 print("Error: {}".format(e))
                 break
 
         client_socket.close()
+
+    # Método para enviar mensajes de chat a todos los clientes
+    def send_chat_message(self, message):
+        for client in self.clients:
+            client.sendall("/chat{}".format(message).encode())
 
     def check_win(self, player):
             # Verificar las filas

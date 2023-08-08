@@ -35,8 +35,21 @@ class TicTacToeClient(QWidget):
         self.move_button.clicked.connect(self.send_move)
         layout.addWidget(self.move_button)
 
+        # Caja de texto para escribir mensajes de chat
+        self.chat_input = QLineEdit()
+        layout.addWidget(self.chat_input)
+
+        # Botón para enviar mensajes de chat
+        self.chat_button = QPushButton("Enviar mensaje de chat")
+        self.chat_button.clicked.connect(self.send_chat_message)
+        layout.addWidget(self.chat_button)
+
         self.setLayout(layout)
 
+    def send_chat_message(self):
+        # Leer el mensaje de chat del usuario desde la interfaz y enviarlo al servidor
+        message = self.chat_input.text()
+        self.client_socket.sendall("/chat{}".format(message).encode())
     def receive_updates(self):
         while True:
             try:
