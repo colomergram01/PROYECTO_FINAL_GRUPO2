@@ -44,12 +44,12 @@ class TicTacToeClient(QWidget):
         self.chat_button.clicked.connect(self.send_chat_message)
         layout.addWidget(self.chat_button)
 
-        self.setLayout(layout)
+        # Etiqueta para mostrar los puntajes
+        self.scores_label = QLabel("Puntajes: X - 0, O - 0")
+        layout.addWidget(self.scores_label)
 
-    def send_chat_message(self):
-        # Leer el mensaje de chat del usuario desde la interfaz y enviarlo al servidor
-        message = self.chat_input.text()
-        self.client_socket.sendall("/chat{}".format(message).encode())
+
+        self.setLayout(layout)
     def receive_updates(self):
         while True:
             try:
@@ -59,6 +59,16 @@ class TicTacToeClient(QWidget):
 
                 # Decodificar el mensaje recibido
                 message = data.decode()
+
+                # Si el mensaje comienza con "/chat", es un mensaje de chat
+                if message.startswith("/chat"):
+                    # Mostrar el mensaje de chat en la interfaz
+                    chat_message = message[6:]
+                    self.board_display.append(chat_message)
+                elif message.startswith("Scores"):
+                    # Mostrar los puntajes en la interfaz
+                    scores = message.split(',')[1:]
+                    self.scores_label.setText("Puntajes: " + ", ".join(scores))
 
                 # Separar el mensaje y el jugador (si es una victoria)
                 parts = message.split(',')
@@ -83,6 +93,11 @@ class TicTacToeClient(QWidget):
                 break
 
         self.client_socket.close()
+    def send_chat_message(self):
+        # Leer el mensaje de chat del usuario desde la interfaz y enviarlo al servidor
+        message = self.chat_input.text()
+        self.client_socket.sendall("/chat{}".format(message).encode())
+
 
     def send_move(self):
         # Leer el movimiento del jugador desde la interfaz y enviarlo al servidor

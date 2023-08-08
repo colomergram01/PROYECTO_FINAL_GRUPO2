@@ -54,6 +54,7 @@ class TicTacToeServer(QWidget):
             player = 'X' if len(self.clients) == 1 else 'O'
             threading.Thread(target=self.handle_client, args=(client_socket, player)).start()
 
+
     def handle_client(self, client_socket, player):
         while True:
             try:
@@ -73,7 +74,7 @@ class TicTacToeServer(QWidget):
                     # Enviar el mensaje de chat a todos los clientes
                     for client in self.clients:
                         if client != client_socket:
-                            client.sendall("{}".format(chat_message).encode())
+                            client.sendall("/chat{}".format(chat_message).encode())
 
                 else:
                     # Decodificar el movimiento recibido (Ejemplo: '1,2' para fila 1, columna 2)
@@ -85,9 +86,16 @@ class TicTacToeServer(QWidget):
 
                         # Verificar si el jugador ha ganado
                         if self.check_win(player):
+                            # Actualizar el puntaje del jugador ganador
+                            self.scores[player] += 1
+
                             # Enviar mensaje de victoria al jugador
                             message = "Victory,{}".format(player)
                             client_socket.sendall(message.encode())
+
+                            # Enviar los puntajes actualizados a todos los clientes
+                            for client in self.clients:
+                                client.sendall(self.get_scores_message().encode())
 
                         else:
                             # Cambiar el turno al otro jugador
@@ -100,6 +108,10 @@ class TicTacToeServer(QWidget):
                                 for client in self.clients:
                                     client.sendall(message.encode())
 
+                                # Enviar los puntajes actualizados a ambos jugadores
+                                for client in self.clients:
+                                    client.sendall(self.get_scores_message().encode())
+
                             else:
                                 # Enviar el nuevo estado del tablero a ambos jugadores
                                 for client in self.clients:
@@ -110,6 +122,14 @@ class TicTacToeServer(QWidget):
                 break
 
         client_socket.close()
+
+    # Método para obtener un mensaje con los puntajes de los jugadores
+    def get_scores_message(self):
+        message = "Scores,{}: {}, {}: {}".format('X', self.scores['X'], 'O', self.scores['O'])
+        return message
+
+
+
 
     # Método para enviar mensajes de chat a todos los clientes
     def send_chat_message(self, message):
